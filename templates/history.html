@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prediction History</title>
+</head>
+<body>
+    <h1>Prediction History</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Senior Citizen</th>
+                <th>Gender</th>
+                <th>Partner</th>
+                <th>Dependents</th>
+                <th>Tenure</th>
+                <th>Phone Service</th>
+                <th>Multiple Lines</th>
+                <th>Internet Service</th>
+                <th>Online Security</th>
+                <th>Online Backup</th>
+                <th>Device Protection</th>
+                <th>Tech Support</th>
+                <th>Streaming TV</th>
+                <th>Streaming Movies</th>
+                <th>Contract</th>
+                <th>Paperless Billing</th>
+                <th>Payment Method</th>
+                <th>Monthly Charges</th>
+                <th>Total Charges</th>
+                <th>Prediction</th>
+                <th>Probability</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.SeniorCitizen }}</td>
+                <td>{{ record.gender }}</td>
+                <td>{{ record.Partner }}</td>
+                <td>{{ record.Dependents }}</td>
+                <td>{{ record.tenure }}</td>
+                <td>{{ record.PhoneService }}</td>
+                <td>{{ record.MultipleLines }}</td>
+                <td>{{ record.InternetService }}</td>
+                <td>{{ record.OnlineSecurity }}</td>
+                <td>{{ record.OnlineBackup }}</td>
+                <td>{{ record.DeviceProtection }}</td>
+                <td>{{ record.TechSupport }}</td>
+                <td>{{ record.StreamingTV }}</td>
+                <td>{{ record.StreamingMovies }}</td>
+                <td>{{ record.Contract }}</td>
+                <td>{{ record.PaperlessBilling }}</td>
+                <td>{{ record.PaymentMethod }}</td>
+                <td>{{ record.MonthlyCharges }}</td>
+                <td>{{ record.TotalCharges }}</td>
+                <td>{{ record.prediction }}</td>
+                <td>{{ record.probability }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('index') }}">Back to Home</a>
+</body>
+</html>

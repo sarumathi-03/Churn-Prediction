@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Churn Prediction</title>
+    <style>
+        body {
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif, Helvetica, sans-serif;
+            background-color: #1995AD;
+            background-image: url('/static/images/2.png');
+            background-size: cover;
+            background-position: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+            background-color: rgb(0, 0, 0);
+            box-shadow: 0 0 10px rgba(4, 25, 113, 0.1);
+            border-radius: 5px;
+            margin-top: 50px;
+        }
+        h1 {
+            text-align: center;
+            color: #2b4efc;
+        }
+        form {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .form-group {
+            flex: 1 1 calc(50% - 20px);
+            margin: 10px;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+            color: #72bbff;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #8b8b8b;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background-color: #1995AD;
+            color: rgb(0, 0, 0);
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #A1D6E2;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #635a89;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Customer Churn Prediction</h1>
+        <form id="churnForm" method="post" action="/predict">
+            <div class="form-group">
+                <label for="SeniorCitizen">Senior Citizen</label>
+                <select id="SeniorCitizen" name="SeniorCitizen">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="Partner">Partner</label>
+                <select id="Partner" name="Partner">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="Dependents">Dependents</label>
+                <select id="Dependents" name="Dependents">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="tenure">Tenure (months)</label>
+                <input type="number" id="tenure" name="tenure" required>
+            </div>
+            <div class="form-group">
+                <label for="PhoneService">Phone Service</label>
+                <select id="PhoneService" name="PhoneService">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="MultipleLines">Multiple Lines</label>
+                <select id="MultipleLines" name="MultipleLines">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="InternetService">Internet Service</label>
+                <select id="InternetService" name="InternetService">
+                    <option value="Fiber optic">Fiber Optic</option>
+                    <option value="DSL">DSL</option>
+                    <option value="No">No Internet</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="OnlineSecurity">Online Security</label>
+                <select id="OnlineSecurity" name="OnlineSecurity">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="OnlineBackup">Online Backup</label>
+                <select id="OnlineBackup" name="OnlineBackup">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="DeviceProtection">Device Protection</label>
+                <select id="DeviceProtection" name="DeviceProtection">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="TechSupport">Tech Support</label>
+                <select id="TechSupport" name="TechSupport">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="StreamingTV">Streaming TV</label>
+                <select id="StreamingTV" name="StreamingTV">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="StreamingMovies">Streaming Movies</label>
+                <select id="StreamingMovies" name="StreamingMovies">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="Contract">Contract</label>
+                <select id="Contract" name="Contract">
+                    <option value="Month-to-month">Month-to-month</option>
+                    <option value="One year">One year</option>
+                    <option value="Two year">Two year</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="PaperlessBilling">Paperless Billing</label>
+                <select id="PaperlessBilling" name="PaperlessBilling">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="PaymentMethod">Payment Method</label>
+                <select id="PaymentMethod" name="PaymentMethod">
+                    <option value="Electronic check">Electronic check</option>
+                    <option value="Mailed check">Mailed check</option>
+                    <option value="Bank transfer (automatic)">Bank transfer (automatic)</option>
+                    <option value="Credit card (automatic)">Credit card (automatic)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="MonthlyCharges">Monthly Charges</label>
+                <input type="number" id="MonthlyCharges" name="MonthlyCharges" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="TotalCharges">Total Charges</label>
+                <input type="number" id="TotalCharges" name="TotalCharges" step="0.01" required>
+            </div>
+            <button type="submit">Predict Churn</button>
+        </form>
+    </div>
+</body>
+</html>
+
+
+
+
