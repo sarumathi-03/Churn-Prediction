@@ -1,79 +1,118 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
-from sklearn.ensemble import RandomForestClassifier
+import pickle
+import logging
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score, roc_curve, precision_recall_curve
 from imblearn.over_sampling import SMOTE
-from sklearn.metrics import accuracy_score
 from xgboost import XGBClassifier
-from tpot import TPOTClassifier
+from sklearn.ensemble import RandomForestClassifier
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-data = pd.read_csv(r"E:\Machine Learning\archive\WA_Fn-UseC_-Telco-Customer-Churn.csv")
+# Step 1: Data Ingestion
+data_path = r"datset.csv"
+data = pd.read_csv(data_path)
 
-# Handle missing values
+# Step 2: Exploratory Data Analysis
+logging.info("Initial Data Info:")
+logging.info(data.info())
+logging.info("\nMissing Values:")
+logging.info(data.isnull().sum())
+logging.info("\nDataset Summary:\n%s", data.describe())
+
+# Only calculate correlation for numeric columns
+numeric_columns = data.select_dtypes(include=['int64', 'float64']).columns
+plt.figure(figsize=(12,6))
+sns.heatmap(data[numeric_columns].corr(), annot=True, cmap='coolwarm', fmt='.2f')
+plt.title("Feature Correlation Heatmap")
+plt.show()
+
+# Step 3: Data Preprocessing
 data['TotalCharges'] = pd.to_numeric(data['TotalCharges'], errors='coerce')
-data = data.dropna(subset=['TotalCharges'])
+data.dropna(subset=['TotalCharges'], inplace=True)
 
-# Define categorical labels mapping
-labels = {
-    "Male": 1, "Female": 0,
-    "Yes": 1, "No": 0,
-    "No phone service": 0,
-    "Fiber optic": 1, "DSL": 2,
-    "No internet service": 0,
-    "Month-to-month": 1, "Two year": 2, "One year": 3,
-    "Electronic check": 1, "Mailed check": 2,
-    "Bank transfer (automatic)": 3, "Credit card (automatic)": 4
-}
+label_encoder = LabelEncoder()
+categorical_columns = data.select_dtypes(include=['object']).columns
+data[categorical_columns] = data[categorical_columns].apply(lambda col: label_encoder.fit_transform(col))
 
-# Map categorical variables to numerical values
-columns_to_convert = [
-    'gender', 'Partner', 'Dependents', 'PhoneService', 'MultipleLines',
-    'InternetService', 'OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
-    'TechSupport', 'StreamingTV', 'StreamingMovies', 'Contract',
-    'PaperlessBilling', 'PaymentMethod', 'Churn'
-]
-
-for column in columns_to_convert:
-    data[column] = data[column].map(labels)
-
-# Split features and target variable
+# Step 4: Feature Engineering
 X = data.drop('Churn', axis=1)
 y = data['Churn']
-
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, random_state=42, test_size=0.2, stratify=y
-)
-
-# Define preprocessing steps
 numeric_features = ['tenure', 'MonthlyCharges', 'TotalCharges']
 categorical_features = [col for col in X.columns if col not in numeric_features]
 
-numeric_transformer = StandardScaler()
-categorical_transformer = OneHotEncoder(handle_unknown='ignore')
+scaler = StandardScaler()
+X[numeric_features] = scaler.fit_transform(X[numeric_features])
 
-# Apply preprocessing to numeric features
-X_train[numeric_features] = numeric_transformer.fit_transform(X_train[numeric_features])
-X_test[numeric_features] = numeric_transformer.transform(X_test[numeric_features])
+# All categorical features are already label encoded from Step 3
+X_final = X.values
 
-# Apply preprocessing to categorical features
-X_train_cat = categorical_transformer.fit_transform(X_train[categorical_features])
-X_test_cat = categorical_transformer.transform(X_test[categorical_features])
+X_train, X_test, y_train, y_test = train_test_split(X_final, y, test_size=0.2, random_state=42, stratify=y)
 
-# Concatenate preprocessed numeric and categorical features
-X_train = np.hstack((X_train[numeric_features].values, X_train_cat.toarray()))
-X_test = np.hstack((X_test[numeric_features].values, X_test_cat.toarray()))
-
+# Step 5: Handling Class Imbalance
 smote = SMOTE(random_state=42)
-X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
-tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2, random_state=42)
-tpot.fit(X_train_smote, y_train_smote)
+# Step 6: Model Training & Hyperparameter Tuning
+rf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42)
+xgb = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
 
-train_accuracy = tpot.score(X_train_smote, y_train_smote)
-print("Training accuracy: ", train_accuracy)
+models = {'RandomForest': rf, 'XGBoost': xgb}
+best_model = None
+best_score = 0
 
-test_accuracy = tpot.score(X_test, y_test)
-print("Test accuracy: ", test_accuracy)
+for name, model in models.items():
+    model.fit(X_train_balanced, y_train_balanced)
+    train_acc = model.score(X_train_balanced, y_train_balanced)
+    test_acc = model.score(X_test, y_test)
+    logging.info(f"{name} - Train Accuracy: {train_acc:.4f}, Test Accuracy: {test_acc:.4f}")
+    if test_acc > best_score:
+        best_score = test_acc
+        best_model = model
+
+# Step 7: Model Evaluation
+y_pred_test = best_model.predict(X_test)
+logging.info("\nClassification Report:\n%s", classification_report(y_test, y_pred_test))
+
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred_test)
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues')
+plt.title('Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.show()
+
+# ROC Curve
+roc_auc = roc_auc_score(y_test, best_model.predict_proba(X_test)[:, 1])
+fpr, tpr, _ = roc_curve(y_test, best_model.predict_proba(X_test)[:, 1])
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.2f}')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend()
+plt.show()
+
+# Precision-Recall Curve
+precision, recall, _ = precision_recall_curve(y_test, best_model.predict_proba(X_test)[:, 1])
+plt.figure(figsize=(8, 6))
+plt.plot(recall, precision, label='Precision-Recall Curve')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall Curve')
+plt.legend()
+plt.show()
+
+# Save Model & Preprocessing Objects
+with open("best_model.pkl", "wb") as model_file:
+    pickle.dump(best_model, model_file)
+with open("scaler.pkl", "wb") as scaler_file:
+    pickle.dump(scaler, scaler_file)
+
+logging.info("All models and preprocessing objects saved successfully!")
